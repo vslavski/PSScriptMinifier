@@ -284,30 +284,42 @@ class MinifyVisitor : AstVisitor2 {
   }
 
   [AstVisitAction] VisitTryStatement([TryStatementAst] $node) {
+    $this.Append('try{')
     if ($node.Body) {
       $node.Body.Visit($this)
+      $this.RemoveTrailingSemi()
     }
-    foreach ($catch in $node.Catches) {
+    $this.Append('}')
+    foreach ($catch in $node.CatchClauses) {
       $catch.Visit($this)
     }
     if ($node.Finally) {
+      $this.Append('finally{')
       $node.Finally.Visit($this)
+      $this.RemoveTrailingSemi()
+      $this.Append('}')
     }
     $this.AppendSemi()
     return [AstVisitAction]::SkipChildren
   }
 
   [AstVisitAction] VisitCatchClause([CatchClauseAst] $node) {
-    $this.Append('catch ')
-    if ($node.ErrorType) {
-      $node.ErrorType.Visit($this)
+    $this.Append('catch')
+    if ($node.CatchTypes.Count -gt 0) {
+      $this.Append(' ')
+      for ($i = 0; $i -lt $node.CatchTypes.Count; $i++) {
+        $node.CatchTypes[$i].Visit($this)
+        if ($i -lt $node.CatchTypes.Count - 1) {
+          $this.Append(',')
+        }
+      }
     }
-    if ($node.Variable) {
-      $this.Append(" `$$($node.Variable)")
-    }
+    $this.Append('{')
     if ($node.Body) {
       $node.Body.Visit($this)
+      $this.RemoveTrailingSemi()
     }
+    $this.Append('}')
     return [AstVisitAction]::SkipChildren
   }
 
